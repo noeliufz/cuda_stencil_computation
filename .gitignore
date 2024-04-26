@@ -1,0 +1,6 @@
+*.o
+*.bak
+testAdvect
+compile_commands.json
+.ccls-cache
+*.plist
