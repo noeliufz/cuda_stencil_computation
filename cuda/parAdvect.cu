@@ -51,7 +51,7 @@ __global__ void par_update_north_south_boundary(int M, int N, double *u,
 
   for (int i = x_start; i < x_end; i++) {
     if (i == 0 || i == N + 1)
-      ;
+      continue;
     V(u, 0, i) = V(u, M, i);
     V(u, M + 1, i) = V(u, 1, i);
     // printf("Updated column %d by thread %d\n", i + 1,
@@ -80,7 +80,7 @@ __global__ void par_update_east_west_boundary(int M, int N, double *u,
 
   for (int i = y_start; i < y_end; i++) {
     if (i == 0 || i == M + 1)
-      ;
+      continue;
     V(u, i, 0) = V(u, i, N);
     V(u, i, N + 1) = V(u, i, 1);
     // printf("Updated column %d by thread %d\n", i + 1,
@@ -130,8 +130,17 @@ __global__ void par_update_advection_field_kernel(int M, int N, double *u,
                  cjp1 * u[i * ldu + j + 1]) +
           cip1 * (cjm1 * u[(i + 1) * ldu + j - 1] + cj0 * u[(i + 1) * ldu + j] +
                   cjp1 * u[(i + 1) * ldu + j + 1]);
-      // printf("accessing i: %d, j: %d\n", i, j);
     }
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      printf("%f\n", v[i * ldu + j]);
+    }
+  }
+  // for (int i = 0; i < 5; i++) {
+  //   for (int j = 0; j < 5; j++) {
+  //     printf("%f\n", v[i * ldu + j]);
+  //   }
+  // }
 }
 
 __global__ void par_copy_field_kernel(int M, int N, double *v, int ldv,
@@ -206,8 +215,6 @@ __device__ void init_shared_memory(double *shared_u, int ldbu, int M, int N,
   int shared_j_end = (threadIdx.y + 1) * size_j;
 
   fix_index_boundary(M, N, &shared_i_end, &shared_j_end);
-  // printf("i %d,%d j %d,%d\n", shared_i_start, shared_j_start, shared_i_start,
-  //      shared_i_end);
 
   for (int i = shared_i_start; i < shared_i_end; i++) {
     for (int j = shared_j_start; j < shared_j_end; j++) {
@@ -225,7 +232,7 @@ __device__ void opt_update_north_south_boundary(double *shared_u,
   int total_j_end = total_j_start + N / gridDim.x / blockDim.x + 1;
 
   int size = total_j_end / blockDim.x / blockDim.y;
-  int thread_id = threadIdx.y * blockDim.x + threadIdx.y + 1;
+  int thread_id = threadIdx.y * blockDim.x + threadIdx.y;
   int shared_j_start = thread_id * size;
   int shared_j_end = (thread_id + 1) * size;
   int shared_i_end = M / blockDim.y / gridDim.y;
@@ -235,20 +242,28 @@ __device__ void opt_update_north_south_boundary(double *shared_u,
     int gi, gj;
     int i = 0;
     index_shared_to_global(M, N, i, j, &gi, &gj);
-    u[ldu + gj + 1] = shared_v[ldbu + j + 1];
+    u[ldu + gj + 1] = shared_u[ldbu + j + 1];
     __syncthreads();
-    shared_u[j + 1] = u[gj + 1];
+    if (gi == 0) {
+      shared_u[j + 1] = u[M * ldu + gj + 1];
+    } else {
+      shared_u[j + 1] = u[gj + 1];
+    }
     index_shared_to_global(M, N, shared_i_end, j, &gi, &gj);
-    u[ldu * (gi + 1) + gj + 1] = shared_v[ldbu * (shared_i_end + 1) + j + 1];
+    u[ldu * gi + gj + 1] = shared_u[ldbu * shared_i_end + j + 1];
     __syncthreads();
-    shared_u[ldbu * shared_i_end + j + 1] = u[ldu * gi + gj + 1];
+    if (gi == M) {
+      shared_u[ldbu * (shared_i_end + 1) + j + 1] = u[gj + 1];
+    } else {
+      shared_u[ldbu * (shared_i_end + 1) + j + 1] = u[ldu * (gi + 1) + gj + 1];
+    }
   }
 }
 __device__ void opt_update_east_west_boundary(double *shared_u,
                                               double *shared_v, int ldbu, int M,
                                               int N, double *u, int ldu) {
   int total_i_start = 0;
-  int total_i_end = total_i_start + M / gridDim.y / blockDim.y;
+  int total_i_end = total_i_start + M / gridDim.y / blockDim.y + 1;
 
   int size = total_i_end / blockDim.x / blockDim.y;
   int thread_id = threadIdx.y * blockDim.x + threadIdx.y;
@@ -261,13 +276,23 @@ __device__ void opt_update_east_west_boundary(double *shared_u,
     int gi, gj;
     int j = 0;
     index_shared_to_global(M, N, i, j, &gi, &gj);
-    u[(gi + 1) * ldu + 1] = shared_v[(i + 1) * ldbu + 1];
-    __syncthreads();
-    shared_u[(i + 1) * ldbu] = u[(gi + 1) * ldu];
+    u[(gi + 1) * ldu + 1] = shared_u[(i + 1) * ldbu + 1];
     index_shared_to_global(M, N, i, shared_j_end, &gi, &gj);
-    u[(gi + 1) * ldu + gj + 1] = shared_v[(i + 1) * ldbu + shared_j_end];
+    u[(gi + 1) * ldu + gj] = shared_u[(i + 1) * ldbu + shared_j_end];
     __syncthreads();
-    shared_u[(i + 1) * ldbu + shared_j_end] = u[(gi + 1) * ldu + gj];
+
+    index_shared_to_global(M, N, i, j, &gi, &gj);
+    if (gj == 0) {
+      shared_u[(i + 1) * ldbu] = u[(gi + 1) * ldu + N];
+    } else {
+      shared_u[(i + 1) * ldbu] = u[(gi + 1) * ldu];
+    }
+    index_shared_to_global(M, N, i, shared_j_end, &gi, &gj);
+    if (gj == N) {
+      shared_u[(i + 1) * ldbu + shared_j_end + 1] = u[(gi + 1) * ldu + 1];
+    } else {
+      shared_u[(i + 1) * ldbu + shared_j_end + 1] = u[(gi + 1) * ldu + gj + 1];
+    }
   }
 }
 __device__ void opt_update_advection_field_kernel(int M, int N, double *u,
@@ -282,13 +307,14 @@ __device__ void opt_update_advection_field_kernel(int M, int N, double *u,
   int total_j_start = 0;
   int total_j_end = total_j_start + N / gridDim.x / blockDim.x;
 
-  int size_i = total_i_end / blockDim.y;
-  int size_j = total_j_end / blockDim.x;
+  int size_i = (total_i_end - total_i_start) / blockDim.y;
+  int size_j = (total_j_end - total_j_start) / blockDim.x;
   int shared_i_start = threadIdx.x * size_i;
   int shared_j_start = threadIdx.y * size_j;
   int shared_i_end = (threadIdx.x + 1) * size_i;
   int shared_j_end = (threadIdx.y + 1) * size_j;
 
+  fix_index_boundary(M, N, &shared_i_end, &shared_j_end);
   for (int i = shared_i_start; i < shared_i_end; i++)
     for (int j = shared_j_start; j < shared_j_end; j++) {
       v[i * ldv + j] =
@@ -299,6 +325,11 @@ __device__ void opt_update_advection_field_kernel(int M, int N, double *u,
           cip1 * (cjm1 * u[(i + 1) * ldu + j - 1] + cj0 * u[(i + 1) * ldu + j] +
                   cjp1 * u[(i + 1) * ldu + j + 1]);
     }
+  for (int i = 0; i < 5; i++) {
+    for (int j = 0; j < 5; j++) {
+      printf("%f\n", v[i * ldu + j]);
+    }
+  }
 }
 
 __device__ void opt_copy_field_kernel(int M, int N, double *v, int ldv,
@@ -335,8 +366,6 @@ __device__ void shared_memory_copy_back(double *shared_u, int ldbu, int M,
   int shared_j_end = (threadIdx.y + 1) * size_j;
 
   fix_index_boundary(M, N, &shared_i_end, &shared_j_end);
-  // printf("i %d,%d j %d,%d\n", shared_i_start, shared_j_start, shared_i_start,
-  //      shared_i_end);
 
   for (int i = shared_i_start; i < shared_i_end; i++) {
     for (int j = shared_j_start; j < shared_j_end; j++) {
@@ -348,13 +377,13 @@ __device__ void shared_memory_copy_back(double *shared_u, int ldbu, int M,
 }
 
 __global__ void run_opt(int M, int N, double *device_u, int ldu, double *v,
-
                         int ldv, double Ux, double Uy, int reps) {
 
   int ldbu = N / gridDim.x / blockDim.x + 2;
   // printf("ldbu: %d\n", ldbu);
-  extern __shared__ double shared_u[];
-  extern __shared__ double shared_v[];
+  extern __shared__ double shared_mem[];
+  double *shared_u = &shared_mem[0];
+  double *shared_v = &shared_mem[ldu * (M + 2)];
 
   init_shared_memory(shared_u, ldbu, M, N, device_u, ldu);
   __syncthreads();
@@ -368,6 +397,11 @@ __global__ void run_opt(int M, int N, double *device_u, int ldu, double *v,
                                       &shared_v[ldbu + 1], ldbu, Ux, Uy);
     opt_copy_field_kernel(M, N, &shared_v[ldbu + 1], ldbu, &shared_u[ldbu + 1],
                           ldbu);
+    // for (int i = 0; i < 5; i++) {
+    //   for (int j = 0; j < 5; j++) {
+    //     printf("%f\n", shared_u[i * ldu + j]);
+    //   }
+    // }
     __syncthreads();
   } // for(r...)
 
@@ -419,8 +453,8 @@ void run_parallel_cuda_advection_optimized(int reps, double *u, int ldu,
   dim3 block(Bx, By);
 
   int size = (M / Gy / By + 2) * (N / Gx / Bx + 2) * sizeof(double);
-  printf("size: %d\n", size);
-  run_opt<<<grid, block, size>>>(M, N, device_u, ldu, v, ldv, Ux, Uy, reps);
+  // printf("size: %d\n", size);
+  run_opt<<<grid, block, 2 * size>>>(M, N, device_u, ldu, v, ldv, Ux, Uy, reps);
 
   HANDLE_ERROR(cudaMemcpy(u, device_u, ldv * (M + 2) * sizeof(double),
                           cudaMemcpyDeviceToHost));
