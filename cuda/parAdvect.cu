@@ -234,18 +234,14 @@ __device__ void opt_update_north_south_boundary(double *shared_u,
   for (int j = shared_j_start; j < shared_j_end; j++) {
     int gi, gj;
     int i = 0;
-    index_shared_to_global(M, N, i, j + 1, &gi, &gj);
-    u[ldu + gj] = shared_u[ldbu + j];
+    index_shared_to_global(M, N, i, j, &gi, &gj);
+    u[ldu + gj + 1] = shared_v[ldbu + j + 1];
     __syncthreads();
-    index_shared_to_global(M, N, i, j + 1, &gi, &gj);
-    shared_u[j] = u[gj];
+    shared_u[j + 1] = u[gj + 1];
+    index_shared_to_global(M, N, shared_i_end, j, &gi, &gj);
+    u[ldu * (gi + 1) + gj + 1] = shared_v[ldbu * (shared_i_end + 1) + j + 1];
     __syncthreads();
-    index_shared_to_global(M, N, shared_i_end, j + 1, &gi, &gj);
-    u[ldu + gj + gi] = shared_u[ldbu + j + i];
-    __syncthreads();
-    index_shared_to_global(M, N, shared_i_end, j + 1, &gi, &gj);
-    shared_u[ldbu * i + j] = u[ldu * gi + gj];
-    __syncthreads();
+    shared_u[ldbu * shared_i_end + j + 1] = u[ldu * gi + gj + 1];
   }
 }
 __device__ void opt_update_east_west_boundary(double *shared_u,
@@ -264,14 +260,14 @@ __device__ void opt_update_east_west_boundary(double *shared_u,
   for (int i = shared_i_start; i < shared_i_end; i++) {
     int gi, gj;
     int j = 0;
-    index_shared_to_global(M, N, i + 1, j + 1, &gi, &gj);
-    u[(gi + 1) * ldu] = shared_v[(i + 1) * ldbu + 1];
+    index_shared_to_global(M, N, i, j, &gi, &gj);
+    u[(gi + 1) * ldu + 1] = shared_v[(i + 1) * ldbu + 1];
     __syncthreads();
-    shared_u[(i + 1) * ldbu] = u[(gi + 1) * ldu + 1];
-    index_shared_to_global(M, N, shared_i_end, j, &gi, &gj);
+    shared_u[(i + 1) * ldbu] = u[(gi + 1) * ldu];
+    index_shared_to_global(M, N, i, shared_j_end, &gi, &gj);
     u[(gi + 1) * ldu + gj + 1] = shared_v[(i + 1) * ldbu + shared_j_end];
     __syncthreads();
-    shared_u[(i + 1) * ldbu + shared_j_end + 1] = u[(gi + 1) * ldu + gj];
+    shared_u[(i + 1) * ldbu + shared_j_end] = u[(gi + 1) * ldu + gj];
   }
 }
 __device__ void opt_update_advection_field_kernel(int M, int N, double *u,
