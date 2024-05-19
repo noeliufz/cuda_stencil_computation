@@ -39,22 +39,29 @@ __global__ void par_update_north_south_boundary(int M, int N, double *u,
   int global_thread_id_y = threadIdx.y + blockIdx.y * blockDim.y;
   int global_thread_id = global_thread_id_y * thread_dim_x +
                          global_thread_id_x; // thread global ID in 1D
-  // printf("Global ID: %d\n", idx);
 
-  int i = global_thread_id;
-  // Let all the threads update N elements
-  while (i < N + 2) {
+  int n = N / (thread_dim_x * thread_dim_y);
+
+  int x_start = global_thread_id * n;
+  int x_end = global_thread_id < thread_dim_x * thread_dim_y - 1
+                  ? (global_thread_id + 1) * n
+                  : N + 2;
+  // printf("n: %d, x start: %d, x end: %d thread: %d\n", n, x_start, x_end,
+  //      global_thread_id);
+
+  for (int i = x_start; i < x_end; i++) {
     if (i == 0 || i == N + 1)
       ;
     V(u, 0, i) = V(u, M, i);
     V(u, M + 1, i) = V(u, 1, i);
-    // printf("Updated column %d by thread %d\n", i + 1, idx);
-    i = i + thread_dim_x * thread_dim_y;
+    // printf("Updated column %d by thread %d\n", i + 1,
+    // global_thread_id);
   }
 }
 
 __global__ void par_update_east_west_boundary(int M, int N, double *u,
                                               int ldu) {
+
   int thread_dim_x = blockDim.x * gridDim.x;
   int thread_dim_y = blockDim.y * gridDim.y;
   int global_thread_id_x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -62,14 +69,22 @@ __global__ void par_update_east_west_boundary(int M, int N, double *u,
   int global_thread_id = global_thread_id_y * thread_dim_x +
                          global_thread_id_x; // thread global ID in 1D
 
-  int i = global_thread_id;
-  while (i < M + 2) {
+  int n = M / (thread_dim_x * thread_dim_y);
+
+  int y_start = global_thread_id * n;
+  int y_end = global_thread_id < thread_dim_x * thread_dim_y - 1
+                  ? (global_thread_id + 1) * n
+                  : M + 2;
+  // printf("n: %d, y start: %d, y end: %d thread: %d\n", n, y_start, y_end,
+  //      global_thread_id);
+
+  for (int i = y_start; i < y_end; i++) {
     if (i == 0 || i == M + 1)
       ;
     V(u, i, 0) = V(u, i, N);
     V(u, i, N + 1) = V(u, i, 1);
-    // printf("Updated line %d by thread %d\n", i, thread_id);
-    i = i + thread_dim_x * thread_dim_y;
+    // printf("Updated column %d by thread %d\n", i + 1,
+    // global_thread_id);
   }
 }
 
