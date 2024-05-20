@@ -233,15 +233,16 @@ __device__ void opt_update_north_south_boundary(double *shared_u,
     int i = 0;
     index_shared_to_global(M, N, i, j, &gi, &gj);
     u[ldu + gj + 1] = shared_u[ldbu + j + 1];
+    index_shared_to_global(M, N, shared_i_end, j, &gi, &gj);
+    u[ldu * gi + gj + 1] = shared_u[ldbu * shared_i_end + j + 1];
     __syncthreads();
+    index_shared_to_global(M, N, i, j, &gi, &gj);
     if (gi == 0) {
-      shared_u[j + 1] = u[M * ldu + gj + 1];
+      shared_u[j + 1] = u[(M + 1) * ldu + gj + 1];
     } else {
       shared_u[j + 1] = u[gj + 1];
     }
     index_shared_to_global(M, N, shared_i_end, j, &gi, &gj);
-    u[ldu * gi + gj + 1] = shared_u[ldbu * shared_i_end + j + 1];
-    __syncthreads();
     if (gi == M) {
       shared_u[ldbu * (shared_i_end + 1) + j + 1] = u[gj + 1];
     } else {
