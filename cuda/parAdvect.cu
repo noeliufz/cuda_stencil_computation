@@ -131,16 +131,6 @@ __global__ void par_update_advection_field_kernel(int M, int N, double *u,
           cip1 * (cjm1 * u[(i + 1) * ldu + j - 1] + cj0 * u[(i + 1) * ldu + j] +
                   cjp1 * u[(i + 1) * ldu + j + 1]);
     }
-  for (int i = 0; i < 5; i++) {
-    for (int j = 0; j < 5; j++) {
-      printf("%f\n", v[i * ldu + j]);
-    }
-  }
-  // for (int i = 0; i < 5; i++) {
-  //   for (int j = 0; j < 5; j++) {
-  //     printf("%f\n", v[i * ldu + j]);
-  //   }
-  // }
 }
 
 __global__ void par_copy_field_kernel(int M, int N, double *v, int ldv,
@@ -325,20 +315,16 @@ __device__ void opt_update_advection_field_kernel(int M, int N, double *u,
           cip1 * (cjm1 * u[(i + 1) * ldu + j - 1] + cj0 * u[(i + 1) * ldu + j] +
                   cjp1 * u[(i + 1) * ldu + j + 1]);
     }
-  for (int i = 0; i < 5; i++) {
-    for (int j = 0; j < 5; j++) {
-      printf("%f\n", v[i * ldu + j]);
-    }
-  }
+  printf("%p\n", v);
 }
 
 __device__ void opt_copy_field_kernel(int M, int N, double *v, int ldv,
                                       double *u, int ldu) {
 
   int total_i_start = 0;
-  int total_i_end = total_i_start + M / gridDim.y / blockDim.y + 1;
+  int total_i_end = total_i_start + M / gridDim.y / blockDim.y;
   int total_j_start = 0;
-  int total_j_end = total_j_start + N / gridDim.x / blockDim.x + 1;
+  int total_j_end = total_j_start + N / gridDim.x / blockDim.x;
 
   int size_i = total_i_end / blockDim.y;
   int size_j = total_j_end / blockDim.x;
@@ -371,7 +357,7 @@ __device__ void shared_memory_copy_back(double *shared_u, int ldbu, int M,
     for (int j = shared_j_start; j < shared_j_end; j++) {
       int gi, gj;
       index_shared_to_global(M, N, i, j, &gi, &gj);
-      shared_u[ldbu * i + j] = u[ldu * gi + gj];
+      u[ldbu * i + j] = shared_u[ldu * gi + gj];
     }
   }
 }
@@ -383,7 +369,9 @@ __global__ void run_opt(int M, int N, double *device_u, int ldu, double *v,
   // printf("ldbu: %d\n", ldbu);
   extern __shared__ double shared_mem[];
   double *shared_u = &shared_mem[0];
-  double *shared_v = &shared_mem[ldu * (M + 2)];
+  double *shared_v = &shared_mem[ldbu * (M / gridDim.y / blockDim.y + 2)];
+  printf("size: %d\n", ldbu * (M / gridDim.y / blockDim.y + 2));
+  printf("%p\n", shared_v);
 
   init_shared_memory(shared_u, ldbu, M, N, device_u, ldu);
   __syncthreads();
@@ -397,17 +385,21 @@ __global__ void run_opt(int M, int N, double *device_u, int ldu, double *v,
                                       &shared_v[ldbu + 1], ldbu, Ux, Uy);
     opt_copy_field_kernel(M, N, &shared_v[ldbu + 1], ldbu, &shared_u[ldbu + 1],
                           ldbu);
-    // for (int i = 0; i < 5; i++) {
-    //   for (int j = 0; j < 5; j++) {
-    //     printf("%f\n", shared_u[i * ldu + j]);
-    //   }
-    // }
     __syncthreads();
   } // for(r...)
 
   shared_memory_copy_back(shared_u, ldbu, M, N, device_u, ldu);
 }
 
+__global__ void test(double *u, int ldu) {
+  if (threadIdx.x == 0 && threadIdx.y == 0) {
+    for (int i = 0; i < 5; i++) {
+      for (int j = 0; j < 5; j++) {
+        printf("%f\n", u[i * ldu + j]);
+      }
+    }
+  }
+}
 // evolve advection over reps timesteps, with (u,ldu) containing the field
 // parallel (2D decomposition) variant
 void run_parallel_cuda_advection_2D_decomposition(int reps, double *u,
@@ -431,6 +423,7 @@ void run_parallel_cuda_advection_2D_decomposition(int reps, double *u,
         M, N, &device_u[ldu + 1], ldu, &v[ldv + 1], ldv, Ux, Uy);
     par_copy_field_kernel<<<grid, block>>>(M, N, &v[ldv + 1], ldv,
                                            &device_u[ldu + 1], ldu);
+    test<<<grid, block>>>(device_u, ldu);
   } // for(r...)
   HANDLE_ERROR(cudaMemcpy(u, device_u, ldv * (M + 2) * sizeof(double),
                           cudaMemcpyDeviceToHost));
@@ -453,7 +446,7 @@ void run_parallel_cuda_advection_optimized(int reps, double *u, int ldu,
   dim3 block(Bx, By);
 
   int size = (M / Gy / By + 2) * (N / Gx / Bx + 2) * sizeof(double);
-  // printf("size: %d\n", size);
+  printf("size: %d\n", size);
   run_opt<<<grid, block, 2 * size>>>(M, N, device_u, ldu, v, ldv, Ux, Uy, reps);
 
   HANDLE_ERROR(cudaMemcpy(u, device_u, ldv * (M + 2) * sizeof(double),
