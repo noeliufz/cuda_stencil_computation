@@ -173,52 +173,55 @@ __global__ void opt_update_advection_field_kernel(int M, int N, double *u,
 
   int x = threadIdx.x;
   int y = threadIdx.y;
-  int global_thread_id_x = threadIdx.x + blockIdx.x * blockDim.x;
-  int global_thread_id_y = threadIdx.y + blockIdx.y * blockDim.y;
+  // global thread x and y
+  int g_x = threadIdx.x + blockIdx.x * blockDim.x;
+  int g_y = threadIdx.y + blockIdx.y * blockDim.y;
 
-  if (global_thread_id_x < M + 1 && global_thread_id_y < N + 1) {
+  if (g_x < M + 1 && g_y < N + 1) {
     // copy from global memory to shared memory for threads within one block
-    V(shared_u, threadIdx.x + 1, threadIdx.y + 1) =
-        V(u, global_thread_id_x + 1, global_thread_id_y + 1);
+    V(shared_u, threadIdx.x + 1, threadIdx.y + 1) = V(u, g_x + 1, g_y + 1);
 
     // update shared memory halo
 
-    if (threadIdx.x == 0) {
-      V(shared_u, 0, threadIdx.y + 1) =
-          V(u, global_thread_id_x, global_thread_id_y + 1);
-      if (threadIdx.y == 0) {
-        V(shared_u, 0, 0) = V(u, global_thread_id_x, global_thread_id_y);
-      }
-      if (threadIdx.y == blockDim.y - 1 || global_thread_id_y == N - 1) {
-        V(shared_u, 0, threadIdx.y + 2) =
-            V(u, global_thread_id_x, global_thread_id_y + 2);
-      }
+    // left
+    if (x == 0) {
+      V(shared_u, 0, y + 1) = V(u, g_x, g_y + 1);
     }
-    if (threadIdx.x == blockDim.x - 1 || global_thread_id_x == M - 1) {
-      V(shared_u, threadIdx.x + 2, threadIdx.y + 1) =
-          V(u, global_thread_id_x + 2, global_thread_id_y + 1);
-      if (threadIdx.y == 0) {
-        V(shared_u, threadIdx.x + 2, 0) =
-            V(u, global_thread_id_x + 2, global_thread_id_y);
-      }
-      if (threadIdx.y == blockDim.y - 1 || global_thread_id_y == N - 1) {
-        V(shared_u, threadIdx.x + 2, threadIdx.y + 2) =
-            V(u, global_thread_id_x + 2, global_thread_id_y + 2);
-      }
+    // top left
+    if (x == 0 && y == 0) {
+      V(shared_u, 0, 0) = V(u, g_x, g_y);
+    }
+    // bottom left
+    if (x == 0 && (y == blockDim.y - 1 || g_y == N - 1)) {
+      V(shared_u, 0, y + 2) = V(u, g_x, g_y + 2);
     }
 
-    // west and east
-    if (threadIdx.y == 0) {
-      V(shared_u, threadIdx.x + 1, 0) =
-          V(u, global_thread_id_x + 1, global_thread_id_y);
+    // right
+    if (x == blockDim.x - 1 || g_x == M - 1) {
+      V(shared_u, x + 2, y + 1) = V(u, g_x + 2, g_y + 1);
     }
-    if (threadIdx.y == blockDim.y - 1 || global_thread_id_y == N - 1) {
-      V(shared_u, threadIdx.x + 1, threadIdx.y + 2) =
-          V(u, global_thread_id_x + 1, global_thread_id_y + 2);
+    // top right
+    if ((x == blockDim.x - 1 || g_x == M - 1) && y == 0) {
+      V(shared_u, x + 2, 0) = V(u, g_x + 2, g_y);
     }
+    // bottom right
+    if ((x == blockDim.x - 1 || g_x == M - 1) &&
+        (y == blockDim.y - 1 || g_y == N - 1)) {
+      V(shared_u, x + 2, y + 2) = V(u, g_x + 2, g_y + 2);
+    }
+
+    // top
+    if (y == 0) {
+      V(shared_u, x + 1, 0) = V(u, g_x + 1, g_y);
+    }
+    // bottom
+    if (y == blockDim.y - 1 || g_y == N - 1) {
+      V(shared_u, x + 1, y + 2) = V(u, g_x + 1, g_y + 2);
+    }
+
     __syncthreads();
 
-    V(v, global_thread_id_x + 1, global_thread_id_y + 1) =
+    V(v, g_x + 1, g_y + 1) =
         cim1 * (cjm1 * V(shared_u, threadIdx.x, threadIdx.y) +
                 cj0 * V(shared_u, threadIdx.x, threadIdx.y + 1) +
                 cjp1 * V(shared_u, threadIdx.x, threadIdx.y + 2)) +
