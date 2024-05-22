@@ -221,6 +221,7 @@ __global__ void opt_update_advection_field_kernel(int M, int N, double *u,
 
     __syncthreads();
 
+    // update value
     V(v, g_x + 1, g_y + 1) =
         cim1 * (cjm1 * V(shared_u, threadIdx.x, threadIdx.y) +
                 cj0 * V(shared_u, threadIdx.x, threadIdx.y + 1) +
@@ -292,14 +293,6 @@ void run_parallel_cuda_advection_optimized(int reps, double *u, int ldu,
     cudaDeviceSynchronize();
 
     // swap buffer pointer
-    double *temp = device_u;
-    device_u = v;
-    v = temp;
-  }
-
-  // if there is only odd times of computations, swap again to make sure the u
-  // is pointing to the updated data
-  if (reps % 2 == 1) {
     double *temp = device_u;
     device_u = v;
     v = temp;
