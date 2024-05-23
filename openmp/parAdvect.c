@@ -31,15 +31,16 @@ void omp_update_boundary_1D_decomposition(double *u, int ldu) {
 
 void omp_update_advection_field_1D_decomposition(double *u, int ldu, double *v,
                                                  int ldv) {
+
   int i, j;
   double Ux = Velx * dt / deltax, Uy = Vely * dt / deltay;
   double cim1, ci0, cip1, cjm1, cj0, cjp1;
   calculate_and_update_coefficients(Ux, &cim1, &ci0, &cip1);
   calculate_and_update_coefficients(Uy, &cjm1, &cj0, &cjp1);
+
 #pragma omp parallel for private(i, j)
-  for (i = 0; i < M; i++)
-    for (j = 0; j < N; j++) {
-      printf("thread %d accessing %d,%d\n", omp_get_thread_num(), i, j);
+  for (j = 0; j < N; j++) {
+    for (i = 0; i < M; i++) {
       v[i * ldv + j] =
           cim1 * (cjm1 * u[(i - 1) * ldu + j - 1] + cj0 * u[(i - 1) * ldu + j] +
                   cjp1 * u[(i - 1) * ldu + j + 1]) +
@@ -48,6 +49,7 @@ void omp_update_advection_field_1D_decomposition(double *u, int ldu, double *v,
           cip1 * (cjm1 * u[(i + 1) * ldu + j - 1] + cj0 * u[(i + 1) * ldu + j] +
                   cjp1 * u[(i + 1) * ldu + j + 1]);
     }
+  }
 } // omp_update_advection_field_1D_decomposition()
 
 void omp_copy_field_1D_decomposition(double *in, int ldin, double *out,
