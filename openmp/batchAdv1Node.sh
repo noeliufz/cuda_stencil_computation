@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -q express
+#PBS -q normal
 #PBS -j oe
 #PBS -l walltime=00:01:00,mem=32GB
 #PBS -l wd
@@ -9,10 +9,10 @@
 e= #echo
 
 r=100
-M=1000 # may need to be bigger
+M=5000 # may need to be bigger
 N=$M
 
-ps="1 3 6 12 24 48"
+ps="3 6 12 24 48"
 
 for p in $ps; do
     opts= #"-P 1"

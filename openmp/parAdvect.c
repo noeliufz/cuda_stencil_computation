@@ -3,9 +3,9 @@
 #include "serAdvect.h" // advection parameters
 #include <assert.h>
 #include <omp.h>
-#include <papi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <papi.h>
 
 static int M, N, P, Q;
 static int verbosity;
@@ -38,20 +38,75 @@ void omp_update_advection_field_1D_decomposition(double *u, int ldu, double *v,
   calculate_and_update_coefficients(Ux, &cim1, &ci0, &cip1);
   calculate_and_update_coefficients(Uy, &cjm1, &cj0, &cjp1);
 
-// cache miss read?
-// #pragma omp parallel for private(i, j) schedule(static, M) collapse(2)
+    // if (PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) {
+    //     fprintf(stderr, "PAPI library initialization error!\n");
+    //     exit(1);
+    // }
 
-// cache miss write
-// #pragma omp parallel for private(i, j) schedule(static, 1)
+    // int event_set = PAPI_NULL;
+    // if (PAPI_create_eventset(&event_set) != PAPI_OK) {
+    //     fprintf(stderr, "PAPI create event set error!\n");
+    //     exit(1);
+    // }
 
-// best performance
-#pragma omp parallel for private(i, j) schedule(static)
+    // if (PAPI_add_event(event_set, PAPI_L1_DCM) != PAPI_OK) {
+    //     fprintf(stderr, "PAPI add event error!\n");
+    //     exit(1);
+    // }
+
+    // if (PAPI_start(event_set) != PAPI_OK) {
+    //     fprintf(stderr, "PAPI start error!\n");
+    //     exit(1);
+    // }
+  // case 3
+//   #pragma omp parallel for schedule(static, 1) 
+//     for (j = 0; j < N; j++) {
+//   for(i = 0; i < M; i++) {
+//       // printf("N: %d\n", N);
+//       // printf("thread id %d visiting %d,%d\n", omp_get_thread_num(), i, j);
+//       v[i * ldv + j] =
+//           cim1 * (cjm1 * u[(i - 1) * ldu + j - 1] + cj0 * u[(i - 1) * ldu + j] +
+//                   cjp1 * u[(i - 1) * ldu + j + 1]) +
+//           ci0 * (cjm1 * u[i * ldu + j - 1] + cj0 * u[i * ldu + j] +
+//                  cjp1 * u[i * ldu + j + 1]) +
+//           cip1 * (cjm1 * u[(i + 1) * ldu + j - 1] + cj0 * u[(i + 1) * ldu + j] +
+//                   cjp1 * u[(i + 1) * ldu + j + 1]);
+//     }
+// }
+
+    // if (PAPI_stop(event_set, NULL) != PAPI_OK) {
+    //     fprintf(stderr, "PAPI stop error!\n");
+    //     exit(1);
+    // }
+
+    // long long values[2];
+    // if (PAPI_read(event_set, values) != PAPI_OK) {
+    //     fprintf(stderr, "PAPI read error!\n");
+    //     exit(1);
+    // }
+
+    // printf("L1 Data Cache Misses: %lld\n", values[0]);
+    // printf("L1 Data Cache Write Misses: %lld\n", values[1]);
+
+    // if (PAPI_cleanup_eventset(event_set) != PAPI_OK) {
+    //     fprintf(stderr, "PAPI cleanup event set error!\n");
+    //     exit(1);
+    // }
+    // if (PAPI_destroy_eventset(&event_set) != PAPI_OK) {
+    //     fprintf(stderr, "PAPI destroy event set error!\n");
+    //     exit(1);
+    // }
+    // PAPI_shutdown();
+
+// case 4
+#pragma omp parallel for private(i, j) schedule(static, 1)
+
+// case 1 
+// #pragma omp parallel for private(i, j) schedule(static)
   for (i = 0; i < M; i++) {
-    // question 2
+    // case 2
     // #pragma omp parallel for private(j)
     for (j = 0; j < N; j++) {
-      // printf("N: %d\n", N);
-      // printf("thread id %d visiting %d,%d\n", omp_get_thread_num(), i, j);
       v[i * ldv + j] =
           cim1 * (cjm1 * u[(i - 1) * ldu + j - 1] + cj0 * u[(i - 1) * ldu + j] +
                   cjp1 * u[(i - 1) * ldu + j + 1]) +

@@ -1,0 +1,48 @@
+
+OMP_NUM_THREADS=3 numactl --cpunodebind=0 --membind=0 ./testAdvect 5000 5000 100
+Advection of a 5000x5000 global field on 3 threads for 100 steps.
+Advection time 2.80e+00s, GFLOPs rate=1.79e+01 (per core 5.95e+00)
+Avg error of final field:  2.572e-08
+Max error of final field:  6.201e-08
+
+
+OMP_NUM_THREADS=6 numactl --cpunodebind=0 --membind=0 ./testAdvect 5000 5000 100
+Advection of a 5000x5000 global field on 6 threads for 100 steps.
+Advection time 2.24e+00s, GFLOPs rate=2.23e+01 (per core 3.71e+00)
+Avg error of final field:  2.572e-08
+Max error of final field:  6.201e-08
+
+
+OMP_NUM_THREADS=12 numactl --cpunodebind=0 --membind=0 ./testAdvect 5000 5000 100
+Advection of a 5000x5000 global field on 12 threads for 100 steps.
+Advection time 2.15e+00s, GFLOPs rate=2.33e+01 (per core 1.94e+00)
+Avg error of final field:  2.572e-08
+Max error of final field:  6.201e-08
+
+
+OMP_NUM_THREADS=24 numactl --cpunodebind=0 --membind=0 ./testAdvect 5000 5000 100
+Advection of a 5000x5000 global field on 24 threads for 100 steps.
+Advection time 4.67e+00s, GFLOPs rate=1.07e+01 (per core 4.46e-01)
+Avg error of final field:  2.572e-08
+Max error of final field:  6.201e-08
+
+
+OMP_NUM_THREADS=48 ./testAdvect 5000 5000 100
+Advection of a 5000x5000 global field on 48 threads for 100 steps.
+Advection time 1.94e+00s, GFLOPs rate=2.58e+01 (per core 5.38e-01)
+Avg error of final field:  2.572e-08
+Max error of final field:  6.201e-08
+
+
+======================================================================================
+                  Resource Usage on 2024-05-25 14:35:42:
+   Job Id:             116460504.gadi-pbs
+   Project:            c07
+   Exit Status:        0
+   Service Units:      0.56
+   NCPUs Requested:    48                     NCPUs Used: 48              
+                                           CPU Time Used: 00:03:16        
+   Memory Requested:   32.0GB                Memory Used: 398.31MB        
+   Walltime requested: 00:01:00            Walltime Used: 00:00:21        
+   JobFS requested:    100.0MB                JobFS used: 0B              
+======================================================================================
