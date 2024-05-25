@@ -2,25 +2,18 @@
 .SUFFIXES:
 .PRECIOUS: %.o
 
-# Define variables
-HDRS = serAdvect.h parAdvect.h
-OBJS = serAdvect.o parAdvect.o
-PROG = testAdvect
-CC = gcc
-CFLAGS = -Wall -Werror -O3 -fopenmp
-LDFLAGS = -lgomp -lm -lpapi
+HDRS=serAdvect.h parAdvect.h
+OBJS=serAdvect.o parAdvect.o
+PROG=testAdvect
+CCFLAGS=-Wall -Werror -O3 -fopenmp
 
-# Default target
-all: $(PROG)
+all: $(PROG) 
 
-# Linking the program
-$(PROG): $(OBJS) $(PROG).o
-	$(CC) -o $@ $(PROG).o $(OBJS) $(LDFLAGS)
-
-# Compiling object files
+%: %.o $(OBJS)
+	gcc -o $* $*.o $(OBJS) -lgomp -lm
 %.o: %.c $(HDRS)
-	$(CC) $(CFLAGS) -c $<
-
-# Clean up
+	gcc $(CCFLAGS) -c $*.c
 clean:
 	rm -f *.o $(PROG)
+
+		

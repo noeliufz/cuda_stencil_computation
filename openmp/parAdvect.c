@@ -3,7 +3,6 @@
 #include "serAdvect.h" // advection parameters
 #include <assert.h>
 #include <omp.h>
-#include <papi.h>
 #include <stdio.h>
 #include <stdlib.h>
 
