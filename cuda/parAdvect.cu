@@ -177,7 +177,7 @@ __global__ void opt_update_advection_field_kernel(int M, int N, double *u,
   int g_x = threadIdx.x + blockIdx.x * blockDim.x;
   int g_y = threadIdx.y + blockIdx.y * blockDim.y;
 
-  if (g_x < M + 1 && g_y < N + 1) {
+  if (g_x < M  && g_y < N ) {
     // copy from global memory to shared memory for threads within one block
     V(shared_u, threadIdx.x + 1, threadIdx.y + 1) = V(u, g_x + 1, g_y + 1);
 
@@ -280,7 +280,8 @@ void run_parallel_cuda_advection_optimized(int reps, double *u, int ldu,
   int gridDimX = (M + Bx - 1) / Bx;
   int gridDimY = (N + By - 1) / By;
 
-  int size = (M / Gy / By + 2) * (N / Gx / Bx + 2) * sizeof(double);
+  //int size = (M / Gy / By + 2) * (N / Gx / Bx + 2) * sizeof(double);
+  int size = (Bx+2)*(By+2)*sizeof(double);
 
   dim3 grid(gridDimX, gridDimY);
   dim3 block(Bx, By);

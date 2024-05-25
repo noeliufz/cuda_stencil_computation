@@ -1,0 +1,40 @@
+Running: ./testAdvect -g 32,32 -b 1,1024 2048 2048 100 -o
+Advection of a 2048x2048 global field on GPU 0 for 100 steps.
+	using optimizations (Gx,Gy=32,32 Bx,By=1,1024 w=0)
+Advection time 1.81e-01s, GFLOPs rate=4.63e+01
+Copy times: host-device 7.86e-03s, device-host 8.01e-03s
+Avg error of final field:  3.779e-07
+Max error of final field:  9.406e-04
+
+Running: ./testAdvect -g 32,32 -b 16,64 2048 2048 100 -o
+Advection of a 2048x2048 global field on GPU 0 for 100 steps.
+	using optimizations (Gx,Gy=32,32 Bx,By=16,64 w=0)
+Advection time 1.86e-01s, GFLOPs rate=4.52e+01
+Copy times: host-device 7.77e-03s, device-host 8.21e-03s
+Avg error of final field:  3.779e-07
+Max error of final field:  9.406e-04
+
+Running: ./testAdvect -g 32,32 -b 32,32 2048 2048 100 -o
+Advection of a 2048x2048 global field on GPU 0 for 100 steps.
+	using optimizations (Gx,Gy=32,32 Bx,By=32,32 w=0)
+Advection time 1.89e-01s, GFLOPs rate=4.43e+01
+Copy times: host-device 7.68e-03s, device-host 7.89e-03s
+Avg error of final field:  3.779e-07
+Max error of final field:  9.406e-04
+
+Running: ./testAdvect -g 32,32 -b 64,16 2048 2048 100 -o
+Advection of a 2048x2048 global field on GPU 0 for 100 steps.
+	using optimizations (Gx,Gy=32,32 Bx,By=64,16 w=0)
+Advection time 1.89e-01s, GFLOPs rate=4.45e+01
+Copy times: host-device 8.24e-03s, device-host 1.05e-02s
+Avg error of final field:  3.779e-07
+Max error of final field:  9.406e-04
+
+Running: ./testAdvect -g 32,32 -b 1024,1 2048 2048 100 -o
+Advection of a 2048x2048 global field on GPU 0 for 100 steps.
+	using optimizations (Gx,Gy=32,32 Bx,By=1024,1 w=0)
+Advection time 2.12e-01s, GFLOPs rate=3.96e+01
+Copy times: host-device 7.67e-03s, device-host 7.97e-03s
+Avg error of final field:  3.779e-07
+Max error of final field:  9.406e-04
+
