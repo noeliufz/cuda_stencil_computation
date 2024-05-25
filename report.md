@@ -57,7 +57,7 @@ This method parallelizes the computing in each row by column. For each row, thre
 
 ### Maximize cache misses involving read operations
 ```c
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for schedule(static, 1) collapse(2)
   for (j = 0; j < N; j++) {
     for (i = 0; i < M; i++) {
       v[i * ldv + j] =
@@ -78,7 +78,7 @@ This method will result in read cache misses each loop step forward without fals
 ### Maximize cache misses involving write operations
 ```c
 // case 4
-#pragma omp parallel for private(i, j) schedule(static, 1)
+#pragma omp parallel for private(i, j) schedule(static, 1) collapse(2)
 for (i = 0; i < M; i++) {
     for (j = 0; j < N; j++) {
         v[i * ldv + j] =
@@ -94,13 +94,30 @@ for (i = 0; i < M; i++) {
 In this combination, there is highest possibility for all threads to write to the same cache line which gives rise to false sharing and thus result in highest cache misses involving write oprations. (Figure. 6)
 ![Case 4](img/p6.png)
 
+### Comparison
 
 # Cuda
+
+
+
+Figure 7 shows the result of testing the advection solver of 5000 * 5000 for 100 steps by different thread number p.
+
+![Advection time](img/P7.png)
+
+Case 1 has the best performance. 
+
+Advection time of case 2 increases significantly when thread number increases as case 2 will fork and join each loop step which takes much time. The more threads there are, the more extra time will be spent on forking and joining.
+
+Advection time of case 3 decreases as thread number increases. This is because if there are more threads, the data will be divided into smaller blocks and there will be less cache miss within one thread level.
+
+Advection time of case 4 generally has the same tendance with the best performace case 1 with higher time on synchronizing write cache among threads.
+
 
 ## Naïve approach
 
 ### Update boundary
-I turned the threads to 1D fashion to divid the `N` elements and `M+2` elements to all threads to update. There are `n=blockDim.x*blockDim.y*gridDim.x*gridDim.y` threads so each thread will update `2*N\n` data for both top and bottom and `2*(M+2)\n` elements for both left and right boundary.
+I turned the threads to 1D fashion to divid the `N` elements and `M+2` elements to all threads to update. There are `n=blockDim.x * blockDim.y * gridDim.x * gridDim.y` threads so each thread will update `2 * N\n` data for both top and bottom and `2 * (M+2)\n` elements for both left and right boundary.
+
 ## Optimized approach
 ### Pointer swap
 According to Vizitiu et al., the pointer to original data and caculated data (in this project array `u` and array `v) can be swapped to save copy time.
