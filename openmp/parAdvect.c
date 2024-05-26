@@ -42,26 +42,6 @@ void omp_update_advection_field_1D_decomposition(double *u, int ldu, double *v,
   calculate_and_update_coefficients(Ux, &cim1, &ci0, &cip1);
   calculate_and_update_coefficients(Uy, &cjm1, &cj0, &cjp1);
 
-  // if (PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) {
-  //     fprintf(stderr, "PAPI library initialization error!\n");
-  //     exit(1);
-  // }
-
-  // int event_set = PAPI_NULL;
-  // if (PAPI_create_eventset(&event_set) != PAPI_OK) {
-  //     fprintf(stderr, "PAPI create event set error!\n");
-  //     exit(1);
-  // }
-
-  // if (PAPI_add_event(event_set, PAPI_L1_DCM) != PAPI_OK) {
-  //     fprintf(stderr, "PAPI add event error!\n");
-  //     exit(1);
-  // }
-
-  // if (PAPI_start(event_set) != PAPI_OK) {
-  //     fprintf(stderr, "PAPI start error!\n");
-  //     exit(1);
-  // }
   // case 3
   // #pragma omp parallel for schedule(static, 1)
   //   for (j = 0; j < N; j++) {
@@ -79,30 +59,6 @@ void omp_update_advection_field_1D_decomposition(double *u, int ldu, double *v,
   //                   cjp1 * u[(i + 1) * ldu + j + 1]);
   //     }
   //   }
-
-  // if (PAPI_stop(event_set, NULL) != PAPI_OK) {
-  //     fprintf(stderr, "PAPI stop error!\n");
-  //     exit(1);
-  // }
-
-  // long long values[2];
-  // if (PAPI_read(event_set, values) != PAPI_OK) {
-  //     fprintf(stderr, "PAPI read error!\n");
-  //     exit(1);
-  // }
-
-  // printf("L1 Data Cache Misses: %lld\n", values[0]);
-  // printf("L1 Data Cache Write Misses: %lld\n", values[1]);
-
-  // if (PAPI_cleanup_eventset(event_set) != PAPI_OK) {
-  //     fprintf(stderr, "PAPI cleanup event set error!\n");
-  //     exit(1);
-  // }
-  // if (PAPI_destroy_eventset(&event_set) != PAPI_OK) {
-  //     fprintf(stderr, "PAPI destroy event set error!\n");
-  //     exit(1);
-  // }
-  // PAPI_shutdown();
 
 // case 4
 // #pragma omp parallel for private(i, j) schedule(static, 1)
@@ -151,6 +107,7 @@ void run_parallel_omp_advection_1D_decomposition(int reps, double *u, int ldu) {
   } // for (r...)
   free(v);
 } // run_parallel_omp_advection_1D_decomposition()
+
 // using 2D parallelization
 void run_parallel_omp_advection_2D_decomposition(int reps, double *u, int ldu) {
   int ldv = N + 2;
