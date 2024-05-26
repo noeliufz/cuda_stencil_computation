@@ -1,36 +1,29 @@
 #!/bin/bash
 
-# 数据行数组
-  data=(
-      "32,32,1,1024"
-  "32,32,16,64"
-  "32,32,32,32"
-  "32,32,64,16"
-  "32,32,1024,1"
+# 数据数组
+data=(
+  "1,64"
+  "2,32"
+  "4,16"
+  "8,8"
+  "16,4"
+  "32,2"
+  "64,1"
 )
 
-
-# 遍历数据行
-for line in "${data[@]}"; do
-  # 用逗号分割行
-  IFS=',' read -r -a params <<< "$line"
-  
-  # 获取参数
-  g1=${params[0]}
-  g2=${params[1]}
-  b1=${params[2]}
-  b2=${params[3]}
-  
-  # 构建命令
-  cmd="./testAdvect -g ${g1},${g2} -b ${b1},${b2} 2048 2048 100 "
-  
-  # 输出命令
-  echo "Running: $cmd"
-  
-  # 执行命令
-  $cmd
-
-  # 输出一个空行
-  echo
+# 遍历数据数组进行两两组合
+for g in "${data[@]}"; do
+  for b in "${data[@]}"; do
+    # 构建命令
+    cmd="./testAdvect -g ${g} -b ${b} 10000 10000 100 -o"
+    
+    # 输出命令
+    echo "Running: $cmd"
+    
+    # 执行命令
+    $cmd
+    
+    # 输出一个空行
+    echo
+  done
 done
-
