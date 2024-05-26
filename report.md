@@ -187,7 +187,7 @@ I tested the speedup with grid `1,1` and block `1,1` for computing 1024 * 1024 f
 
 ## Optimized approach
 ### Pointer swap
-According to Vizitiu et al., the pointer to original data and calculated data (in this project array `u` and array `v) can be swapped to save copy time.
+According to Vizitiu et al., the pointer to original data and calculated data (in this project array `u` and array `v`) can be swapped to save copy time.
 
 ### Shared memory within one block
 In naïve approach, all threads read data from global memory of the GPU which spends more time than reading from a shared memory. 
